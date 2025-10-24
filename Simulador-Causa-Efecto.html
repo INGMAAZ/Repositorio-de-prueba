@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Diagrama de Ishikawa</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .bar-histogram {
+            display: flex;
+            flex-direction: column-reverse; /* Dibuja las barras de abajo hacia arriba */
+            gap: 2px;
+            cursor: ns-resize; /* Cursor de redimensionamiento vertical */
+            height: 8rem; /* Altura del contenedor */
+            width: 2rem;
+            padding: 2px;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            user-select: none; /* Evita la selección de texto al arrastrar */
+        }
+
+        .histo-bar {
+            height: 10%; /* Cada barra es 1/10 de la altura total */
+            width: 100%;
+            background-color: #e5e7eb; /* color gris por defecto */
+            border-radius: 1px;
+            transition: background-color: 0.15s ease-in-out;
+        }
+        
+        .cause-label {
+            transform-origin: bottom left;
+            white-space: nowrap;
+        }
+
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="container mx-auto p-4 md:p-8">
+
+        <!-- Header --><div class="text-center mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-800">Simulador Causa-Efecto</h1>
+            <p class="text-gray-600 mt-2 text-lg">Basado en el Diagrama de Ishikawa (6M)</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-xl p-6 md:p-10 overflow-hidden">
+            <div class="flex flex-col items-center justify-center w-full">
+                <p class="text-center text-gray-700 font-semibold mb-12">Ajusta la proporción de cada componente:</p>
+                
+                <!-- Contenedor del Diagrama --><div class="relative w-full max-w-5xl my-24 min-h-[340px] flex items-center">
+                    
+                    <!-- Espina principal --><div class="w-full h-2 bg-gray-700 rounded-full"></div>
+                    
+                    <!-- Cabeza del pescado (Efecto) --><div class="absolute -right-12 md:-right-20 flex items-center z-10">
+                        <div class="bg-gray-800 text-white p-4 rounded-xl shadow-2xl text-center w-48">
+                            <h3 class="font-bold text-xl mb-2">EFECTO</h3>
+                            <div class="flex items-end justify-center gap-3">
+                                <div id="effect-chart" class="w-8 h-32 bg-gray-700 rounded flex flex-col-reverse overflow-hidden">
+                                    <!-- Las barras acumuladas se inyectarán aquí por JS -->
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-300 mb-1">(Total)</p>
+                                    <div id="effect-value" class="text-3xl font-mono font-bold text-cyan-300">300</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="w-0 h-0
+                            border-t-[30px] border-t-transparent
+                            border-l-[30px] border-l-gray-800
+                            border-b-[30px] border-b-transparent">
+                        </div>
+                    </div>
+
+                    <!-- Espinas y Controles -->
+                    
+                    <!-- ######### CAUSAS SUPERIORES ######### -->
+
+                    <!-- Medición -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-purple-600 rounded-full" style="left: 15%; top: 50%; transform-origin: right; transform: rotate(-45deg);"></div>
+                     <div class="absolute flex items-start gap-2" style="left: 20%; top: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <label class="font-bold text-purple-700 cause-label" style="transform: rotate(-45deg) translateY(-10px) translateX(10px);">Medición</label>
+                            <div id="medicion" class="bar-histogram" data-value="50" data-color="bg-purple-500"></div>
+                            <span id="medicion-value" class="font-mono text-lg bg-purple-100 text-purple-800 rounded-md px-2 py-1">50</span>
+                        </div>
+                    </div>
+
+                    <!-- Materiales -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-red-600 rounded-full" style="left: 40%; top: 50%; transform-origin: right; transform: rotate(-45deg);"></div>
+                     <div class="absolute flex items-start gap-2" style="left: 45%; top: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <label class="font-bold text-red-700 cause-label" style="transform: rotate(-45deg) translateY(-10px) translateX(10px);">Materiales</label>
+                            <div id="materiales" class="bar-histogram" data-value="50" data-color="bg-red-500"></div>
+                            <span id="materiales-value" class="font-mono text-lg bg-red-100 text-red-800 rounded-md px-2 py-1">50</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Métodos -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-yellow-600 rounded-full" style="left: 65%; top: 50%; transform-origin: right; transform: rotate(-45deg);"></div>
+                    <div class="absolute flex items-start gap-2" style="left: 70%; top: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <label class="font-bold text-yellow-700 cause-label" style="transform: rotate(-45deg) translateY(-10px) translateX(10px);">Métodos</label>
+                            <div id="metodos" class="bar-histogram" data-value="50" data-color="bg-yellow-500"></div>
+                            <span id="metodos-value" class="font-mono text-lg bg-yellow-100 text-yellow-800 rounded-md px-2 py-1">50</span>
+                        </div>
+                    </div>
+
+
+                    <!-- ######### CAUSAS INFERIORES ######### -->
+                    
+                    <!-- Medio Ambiente -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-indigo-600 rounded-full" style="left: 15%; top: 50%; transform-origin: right; transform: rotate(45deg);"></div>
+                    <div class="absolute flex items-end gap-2" style="left: 20%; bottom: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <span id="medio-ambiente-value" class="font-mono text-lg bg-indigo-100 text-indigo-800 rounded-md px-2 py-1">50</span>
+                            <div id="medio-ambiente" class="bar-histogram" data-value="50" data-color="bg-indigo-500"></div>
+                            <label class="font-bold text-indigo-700 cause-label" style="transform: rotate(45deg) translateY(10px) translateX(-10px);">Medio Ambiente</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Maquinaria -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-green-600 rounded-full" style="left: 40%; top: 50%; transform-origin: right; transform: rotate(45deg);"></div>
+                    <div class="absolute flex items-end gap-2" style="left: 45%; bottom: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <span id="maquinaria-value" class="font-mono text-lg bg-green-100 text-green-800 rounded-md px-2 py-1">50</span>
+                            <div id="maquinaria" class="bar-histogram" data-value="50" data-color="bg-green-500"></div>
+                             <label class="font-bold text-green-700 cause-label" style="transform: rotate(45deg) translateY(10px) translateX(-10px);">Maquinaria</label>
+                        </div>
+                    </div>
+
+                    <!-- Mano de Obra -->
+                    <div class="bone absolute w-1/5 h-1.5 bg-blue-600 rounded-full" style="left: 65%; top: 50%; transform-origin: right; transform: rotate(45deg);"></div>
+                    <div class="absolute flex items-end gap-2" style="left: 70%; bottom: -100px; transform: translateX(-50%);">
+                         <div class="cause-control-wrapper text-center">
+                            <span id="mano-obra-value" class="font-mono text-lg bg-blue-100 text-blue-800 rounded-md px-2 py-1">50</span>
+                            <div id="mano-obra" class="bar-histogram" data-value="50" data-color="bg-blue-500"></div>
+                            <label class="font-bold text-blue-700 cause-label" style="transform: rotate(45deg) translateY(10px) translateX(-10px);">Mano de Obra</label>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const histograms = document.querySelectorAll('.bar-histogram');
+            const effectValueElement = document.getElementById('effect-value');
+            const effectChart = document.getElementById('effect-chart');
+
+            // --- Funciones ---
+            const updateEffect = () => {
+                let total = 0;
+                effectChart.innerHTML = ''; // Limpiar la gráfica anterior
+
+                const componentsData = [];
+                histograms.forEach(container => {
+                    const value = parseInt(container.dataset.value, 10);
+                    const colorClass = container.dataset.color;
+                    const name = container.id.replace(/-/g, ' ');
+                    total += value;
+                    componentsData.push({ value, colorClass, name });
+                });
+
+                effectValueElement.textContent = total;
+
+                const maxTotal = histograms.length * 100; // 6 * 100 = 600
+
+                if (total > 0) {
+                    componentsData.forEach(component => {
+                        if (component.value > 0) {
+                            const segment = document.createElement('div');
+                            const heightPercentage = (component.value / maxTotal) * 100;
+                            segment.style.height = `${heightPercentage}%`;
+                            segment.classList.add(component.colorClass);
+                            const titleName = component.name.charAt(0).toUpperCase() + component.name.slice(1);
+                            segment.setAttribute('title', `${titleName}: ${component.value}`);
+                            effectChart.appendChild(segment);
+                        }
+                    });
+                }
+            };
+
+            const updateBars = (container, value) => {
+                const bars = container.querySelectorAll('.histo-bar');
+                const activeColor = container.dataset.color;
+                
+                bars.forEach((bar, index) => {
+                    const threshold = (index + 1) * 10;
+                    bar.className = 'histo-bar'; // Limpia todos los colores previos
+
+                    if (value >= threshold) {
+                        bar.classList.add(activeColor);
+                    } else {
+                        bar.classList.add('bg-gray-200');
+                    }
+                });
+            };
+
+            const handleInteraction = (event) => {
+                event.preventDefault();
+                const container = event.currentTarget;
+                const rect = container.getBoundingClientRect();
+                const y = (event.clientY || event.touches[0].clientY) - rect.top;
+                
+                // Invertimos el cálculo porque el origen Y=0 está en la parte superior
+                const percentage = Math.max(0, Math.min(1, 1 - (y / rect.height)));
+                let value = Math.ceil(percentage * 10) * 10;
+                if (value > 100) value = 100;
+                
+                container.dataset.value = value;
+                document.getElementById(`${container.id}-value`).textContent = value;
+                updateBars(container, value);
+                updateEffect();
+            };
+            
+            // --- Inicialización ---
+            histograms.forEach(container => {
+                for (let i = 0; i < 10; i++) {
+                    const bar = document.createElement('div');
+                    bar.classList.add('histo-bar');
+                    container.appendChild(bar);
+                }
+
+                const initialValue = parseInt(container.dataset.value, 10);
+                updateBars(container, initialValue);
+
+                let isDragging = false;
+                
+                container.addEventListener('mousedown', (e) => {
+                    isDragging = true;
+                    handleInteraction(e);
+                });
+                 container.addEventListener('mousemove', (e) => {
+                    if (isDragging) handleInteraction(e);
+                });
+                
+                document.addEventListener('mouseup', () => {
+                    if(isDragging) isDragging = false;
+                });
+                
+                container.addEventListener('mouseleave', (e) => {
+                    if (isDragging && e.buttons !== 1) {
+                       isDragging = false;
+                    }
+                });
+
+                container.addEventListener('touchstart', (e) => { isDragging = true; handleInteraction(e); }, { passive: false });
+                container.addEventListener('touchmove', (e) => { if(isDragging) handleInteraction(e); }, { passive: false });
+                container.addEventListener('touchend', () => isDragging = false);
+            });
+
+            updateEffect();
+        });
+    </script>
+</body>
+</html>
+
